@@ -1,2 +1,2 @@
 # MrFlibble
-My first Slack App
+A simple Slack App - experimenting with the structure.

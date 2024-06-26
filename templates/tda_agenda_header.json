@@ -1,0 +1,24 @@
+[
+    {
+        "type": "divider"
+    },
+    {
+        "type": "header",
+        "text": {
+            "type": "plain_text",
+            "text": "Technical Design Authority Agenda"
+        }
+    },
+    {
+        "type": "context",
+        "elements": [
+            {
+                "type": "plain_text",
+                "text": "%LONGDATE% (%HUMANDATE%)"
+            }
+        ]
+    },
+    {
+        "type": "divider"
+    }
+]

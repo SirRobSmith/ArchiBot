@@ -1,0 +1,9 @@
+pylint
+flask==2.3.3
+gunicorn
+atlassian-python-api
+google-cloud-secret-manager
+slack_bolt
+arrow
+flask-api-key
+flask-api-key-decorator

@@ -1,0 +1,9 @@
+.venv
+__pycache__
+.terraform*
+.vscode
+credentials.json
+slack_channels.json
+slack_channels.json.prod
+useful_values.json
+jira_issue_payload.json

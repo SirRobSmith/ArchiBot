@@ -1,0 +1,38 @@
+[
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "ADR Logged: %SUMMARY%"
+    }
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "Author: *%AUTHOR%*\nValue-Steams Impacted: *%VS_IMPACTED%*"
+      }
+    ]
+  },
+  {
+    "type": "divider"
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "Status: *%STATUS%*"
+    },
+    "accessory": {
+      "type": "button",
+      "text": {
+        "type": "plain_text",
+        "text": "%KEY%"
+      },
+      "value": "click_me_123",
+      "url": "%LINK%",
+      "action_id": "button-action"
+    }
+  }
+]
