@@ -15,16 +15,19 @@ import os
 import sys
 import json
 import logging
+import mariadb
+from jsonschema import validate
+from jsonschema.exceptions import ValidationError
 from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
 from atlassian import Jira
 from atlassian import Confluence
-from flask import Flask, request
-from flask import Response
+from flask import Flask, request, Response
 from require_api_key import require_api_key
 from google.cloud import secretmanager
 from libs.jira_activities import publish_agenda
 from libs.jira_activities import publish_adr
+from libs.events import event_catcher
 
 # Establish some basic logging functionality.
 logging.basicConfig(level=logging.INFO)
@@ -53,7 +56,21 @@ ATLASSIAN_PASS      = secrets_data['ATLASSIAN_PASS']
 JIRA_SEARCH_FILTER  = str(secrets_data['JIRA_SEARCH_FILTER'])
 SLACK_CHANNEL       = secrets_data['PRIMARY_SLACK_CHANNEL']
 SLACK_CHANNEL_MAP   = secrets_data['SLACK_CHANNEL_MAP']
+DB_HOST             = "127.0.0.1"
+DB_USER             = "root"
+DB_PASS             = "pass"
+DB_DATABASE         = "events"
 
+# Connect to the database & get the cursor
+db_connection = mariadb.connect (
+                    user=DB_USER,
+                    password=DB_PASS,
+                    host=DB_HOST,
+                    port=3306,
+                    database=DB_DATABASE
+                )
+
+db_cursor = db_connection.cursor()
 
 # Make a basic connection to JIRA & Confluence
 jira        = Jira(url=ATLASSIAN_API_ROOT, username=ATLASSIAN_USER, password=ATLASSIAN_PASS)
@@ -81,17 +98,10 @@ def flask_publish_agenda():
     """
     Triggers the common function for publishing the agenda.
     This function has no payload.
+    Params: None
     """
-    # Attempt to use the common function
-    try:
-
-        publish_agenda(app, jira, SLACK_CHANNEL, JIRA_SEARCH_FILTER, ATLASSIAN_API_ROOT)
-
-    except Exception:
-
-        return Response("FAILED", status=501, mimetype='text/plain')
-
-    return Response("OK", status=200, mimetype='text/plain')
+    
+    return publish_agenda(app, jira, SLACK_CHANNEL, JIRA_SEARCH_FILTER, ATLASSIAN_API_ROOT)
 
 # Establish a route for web-hook based requests for ADRs
 @flask_app.route("/publish-adr", methods=["POST"])
@@ -100,20 +110,24 @@ def flask_publish_adr():
     """
     Triggers the common function for sharing details of the ADR.
     Params: 
-    request.json['key'] - The JIRA key for the ADR
+    request.json['key'] - The JIRA key for the ADR """
+
+    return publish_adr(app, jira, SLACK_CHANNEL_MAP, request.json['key'], ATLASSIAN_API_ROOT)
+
+#  A route to deal with inbound web-hooks from Confluence and JIRA.
+@flask_app.route("/events/<source_system>", methods=["POST"])
+@require_api_key
+def flask_event_catcher(source_system):
+
+    return event_catcher(db_connection, db_cursor, source_system)
+
+# A simple health-check to validate that the service is at least running
+# and somewhat operational
+@flask_app.route("/health-check", methods=["GET"])
+def flask_health_check():
     """
-    # JIRA sends us the key only, pass this to tne function
-    jira_key = request.json['key']
+    A trivial health-check to ensure the app is running.
+    Params: None
+    """
 
-    # A quick check to see if it's an actual string
-    if not jira_key:
-        return Response("No Key Provided", status=501, mimetype='text/plain')
-
-    # Try and publish the ADR to Slack
-    try:
-        publish_adr(app, jira, SLACK_CHANNEL_MAP, jira_key, ATLASSIAN_API_ROOT)
-
-    except Exception:
-        return Response("FAILED", status=501, mimetype='text/plain')
-
-    return Response("OK", status=200, mimetype='text/plain')
+    return Response("Health-Check-OK", status=200, mimetype='text/plain') 

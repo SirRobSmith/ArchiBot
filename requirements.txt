@@ -7,3 +7,5 @@ slack_bolt
 arrow
 flask-api-key
 flask-api-key-decorator
+mariadb
+jsonschema

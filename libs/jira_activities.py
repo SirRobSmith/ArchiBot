@@ -5,6 +5,7 @@
 
 import arrow
 from libs.template import load_template
+from flask import Response
 
 def publish_agenda(app, jira, slack_channel, jira_search_filter, atlassian_api_root):
     """
@@ -87,8 +88,7 @@ def publish_agenda(app, jira, slack_channel, jira_search_filter, atlassian_api_r
                 text="TDA Agenda Item"
             )
 
-            return {"response": "OK", "status_code": "200"}
-
+    return Response("OK", status=200, mimetype='text/plain')
 
 def publish_adr(app, jira, slack_channel_map, jira_key, atlassian_api_root):
     """ 
@@ -101,50 +101,59 @@ def publish_adr(app, jira, slack_channel_map, jira_key, atlassian_api_root):
 
     # Identify the stuff we want to post to Slack.
     impacted_value_stream_str       = str()
+    issue_impacted_value_streams    = issue_data['fields']['customfield_10383']
     issue_summary                   = issue_data['fields']['summary']
     issue_assignee                  = str(issue_data['fields']['assignee']['displayName'])
     issue_status                    = issue_data['fields']['customfield_10241']['value']
     issue_key                       = issue_data['key']
     issue_link                      = atlassian_api_root+"/browse/"+issue_key
 
-    # Produce a string of impacted value-streams for the message
-    for impacted_value_stream in issue_data['fields']['customfield_10383']:
+    # We may process ADRs which have no impacted value-stream
+    if type(issue_impacted_value_streams) is list:
+        # Produce a string of impacted value-streams for the message
+        for impacted_value_stream in issue_impacted_value_streams:
+            impacted_value_stream_str = impacted_value_stream_str + impacted_value_stream['value']+","
+        
+        # The last character will always be a , and needs to be trimmed to look less rubbish
+        impacted_value_stream_str = impacted_value_stream_str[0:-1]
 
-        impacted_value_stream_str = impacted_value_stream_str + impacted_value_stream['value']+","
+    else:
+        # If we have no impacted value-streams
+        impacted_value_stream_str = ("No Impacted Value-Streams")
 
-    # The last character will always be a , and needs to be trimmed to look less rubbish
-    impacted_value_stream_str = impacted_value_stream_str[0:-1]
 
     # Build the relevant information for each post we're go
-    for impacted_value_stream in issue_data['fields']['customfield_10383']:
+    if type(issue_impacted_value_streams) is list:
 
-        # A bit crude - map the impacted value-stream to the respective slack channel.
-        if impacted_value_stream['value'] == "Mortgages":
-            vs_slack_id = slack_channel_map['Mortgages']
-        if impacted_value_stream['value'] == "Enterprise":
-            vs_slack_id = slack_channel_map['Enterprise']
-        if impacted_value_stream['value'] == "Platform":
-            vs_slack_id = slack_channel_map['Platform']
-        if impacted_value_stream['value'] == "Savings":
-            vs_slack_id = slack_channel_map['Savings']
-        if impacted_value_stream['value'] == "Business Banking":
-            vs_slack_id = slack_channel_map['Business Banking']
+        for impacted_value_stream in issue_impacted_value_streams:
 
-        template_config = {
-            "%KEY%" : issue_key,
-            "%STATUS%": issue_status,
-            "%AUTHOR%": issue_assignee,
-            "%VS_IMPACTED%": impacted_value_stream_str,
-            "%SUMMARY%": issue_summary,
-            "%LINK%": issue_link
-        }
+            # A bit crude - map the impacted value-stream to the respective slack channel.
+            if impacted_value_stream['value'] == "Mortgages":
+                vs_slack_id = slack_channel_map['Mortgages']
+            if impacted_value_stream['value'] == "Enterprise":
+                vs_slack_id = slack_channel_map['Enterprise']
+            if impacted_value_stream['value'] == "Platform":
+                vs_slack_id = slack_channel_map['Platform']
+            if impacted_value_stream['value'] == "Savings":
+                vs_slack_id = slack_channel_map['Savings']
+            if impacted_value_stream['value'] == "Business Banking":
+                vs_slack_id = slack_channel_map['Business Banking']
 
-        message_adr = load_template("adr_published", template_config)
+            template_config = {
+                "%KEY%" : issue_key,
+                "%STATUS%": issue_status,
+                "%AUTHOR%": issue_assignee,
+                "%VS_IMPACTED%": impacted_value_stream_str,
+                "%SUMMARY%": issue_summary,
+                "%LINK%": issue_link
+            }
 
-        app.client.chat_postMessage(
-            channel=vs_slack_id,
-            blocks=message_adr,
-            text="ADR Published"
-        )
+            message_adr = load_template("adr_published", template_config)
 
-        return {"response": "OK", "status_code": "200"}
+            app.client.chat_postMessage(
+                channel=vs_slack_id,
+                blocks=message_adr,
+                text="ADR Published"
+            )
+
+    return Response("OK", status=200, mimetype='text/plain')
