@@ -46,6 +46,10 @@ resource "google_cloud_run_service" "default" {
             name = "IMAGE_DETAILS"
             value = var.docker_image_location
           }
+          env {
+            name = "SECRET_REF"
+            value = var.SECRET_REF
+          }
           startup_probe {
               initial_delay_seconds = 0
               timeout_seconds = 1
