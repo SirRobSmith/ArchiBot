@@ -1,0 +1,76 @@
+name: 'Simple GCP Cloud Run Workflow'
+
+on: 
+  pull_request:
+    branches:
+      - main
+
+
+jobs:
+
+    publish-image:
+
+      runs-on: ubuntu-latest
+      steps:
+      - uses: actions/checkout@v2
+
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: 'gcloud-cli-setup'
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: 'docker-credential-helper-setup'
+        run: 'gcloud auth configure-docker ${{ vars.ARTEFACT_REGISTRY_HOSTNAME}}'
+
+      - name: 'build-docker-image'
+        run: 'docker build -t ${{ vars.APP_NAME }}:$GITHUB_SHA .; docker images | grep ${{ vars.APP_NAME }}'
+
+      - name: 'tag-docker-image'
+        run: 'docker tag ${{ vars.APP_NAME}}:$GITHUB_SHA ${{ vars.ARTEFACT_REGISTRY_ROOT}}/${{ vars.APP_NAME }}:$GITHUB_SHA'
+
+      - name: 'gcloud-info'
+        run: 'gcloud info'
+
+      - name: 'gcloud-artefact-repos'
+        run: 'gcloud artifacts repositories list'  
+
+      - name: 'push-docker-image'
+        run: 'docker push ${{ vars.ARTEFACT_REGISTRY_ROOT}}/${{ vars.APP_NAME }}:$GITHUB_SHA'
+
+    deploy-cloud-run:
+      needs: publish-image
+
+      runs-on: ubuntu-latest
+      steps:
+      - uses: actions/checkout@v2
+
+
+
+      - name: 'terraform'
+        run: |
+          echo "- Change to the terraform directory"
+          cd terraform
+          echo "- Export Secret to credentials.json"
+          echo '${{ secrets.CREDENTIAL_CONTENT }}' | base64 -d > credentials.json
+          echo "- View the files in the current directory"
+          ls -halt
+          echo "- Initiaitlise terraform"
+          terraform init
+          echo "- Run terraform plan"
+          terraform plan
+          terraform apply -auto-approve
+        env:
+          TF_VAR_project_name: ${{ vars.GCP_PROJECT_NAME }}
+          TF_VAR_region: ${{ vars.GCP_REGION }}
+          TF_VAR_zone: ${{ vars.GCP_ZONE }}
+          TF_VAR_service_name: ${{ vars.APP_NAME }}
+          TF_VAR_docker_image_location: '${{ vars.ARTEFACT_REGISTRY_ROOT }}/${{ vars.APP_NAME }}:${{ github.sha }}'
+          TF_VAR_SECRET_REF: ${{ secrets.SECRET_REF }}
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+          GOOGLE_APPLICATION_CREDENTIALS: "credentials.json"
+
+
+
