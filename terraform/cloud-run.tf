@@ -28,6 +28,11 @@ variable docker_image_location {
   description = "The artefact registry location for the code."
 }
 
+variable SECRET_REF {
+  type = string
+  description = "The resource link to Google Secret Manager"
+}
+
 resource "google_cloud_run_service" "default" {
   name      = var.service_name
   location  = var.zone
