@@ -50,6 +50,7 @@ app = App(
     token=secrets_data['SLACK_BOT_TOKEN'])
 
 # Define some friendlier, more usable variables from the returned secrets_data json
+API_KEY             = secrets_data['API_KEY']
 ATLASSIAN_API_ROOT  = secrets_data['ATLASSIAN_API_ROOT']
 ATLASSIAN_USER      = secrets_data['ATLASSIAN_USER']
 ATLASSIAN_PASS      = secrets_data['ATLASSIAN_PASS']
@@ -93,7 +94,7 @@ def slack_events():
 
 # Establish a route for web-hook based requests to publish the agenda
 @flask_app.route("/publish-agenda", methods=["POST"])
-@require_api_key
+@require_api_key(key=API_KEY)
 def flask_publish_agenda():
     """
     Triggers the common function for publishing the agenda.
@@ -105,7 +106,7 @@ def flask_publish_agenda():
 
 # Establish a route for web-hook based requests for ADRs
 @flask_app.route("/publish-adr", methods=["POST"])
-@require_api_key
+@require_api_key(key=API_KEY)
 def flask_publish_adr():
     """
     Triggers the common function for sharing details of the ADR.
@@ -116,7 +117,7 @@ def flask_publish_adr():
 
 #  A route to deal with inbound web-hooks from Confluence and JIRA.
 @flask_app.route("/events/<source_system>", methods=["POST"])
-@require_api_key
+@require_api_key(key=API_KEY)
 def flask_event_catcher(source_system):
 
     return event_catcher(db_connection, db_cursor, source_system)
