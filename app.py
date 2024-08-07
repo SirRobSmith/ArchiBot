@@ -136,7 +136,7 @@ def flask_event_catcher(source_system):
 def flask_health_check():
     """
     A trivial health-check to ensure the app is running.
-    Params: None
+    Params: None 
     """
 
     return Response("Health-Check-OK", status=200, mimetype='text/plain') 
