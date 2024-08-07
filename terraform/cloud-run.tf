@@ -33,6 +33,11 @@ variable SECRET_REF {
   description = "The resource link to Google Secret Manager"
 }
 
+variable sql_root_password {
+  type = string
+  description = "The root password for MySQL"
+}
+
 resource "google_cloud_run_service" "default" {
   name      = var.service_name
   location  = var.zone
@@ -75,7 +80,7 @@ resource "google_cloud_run_service" "default" {
         "run.googleapis.com/client-name"        = "terraform"
       }
     }
-    
+
   }
 }
 
@@ -104,6 +109,8 @@ resource "google_sql_database_instance" "instance" {
   name             = var.service_name
   region           = var.region
   database_version = "MYSQL_5_7"
+  root_password = var.sql_root_password
+
   settings {
     tier = "db-f1-micro"
   }

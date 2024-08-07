@@ -69,6 +69,7 @@ jobs:
           TF_VAR_service_name: ${{ vars.APP_NAME }}
           TF_VAR_docker_image_location: '${{ vars.ARTEFACT_REGISTRY_ROOT }}/${{ vars.APP_NAME }}:${{ github.sha }}'
           TF_VAR_SECRET_REF: ${{ secrets.SECRET_REF }} 
+          TF_VAR_sql_root_password: ${{ secrets.SQL_ROOT_PASSWORD }} 
           GITHUB_CONTEXT: ${{ toJson(github) }}
           GOOGLE_APPLICATION_CREDENTIALS: "credentials.json"
 
