@@ -57,10 +57,10 @@ ATLASSIAN_PASS      = secrets_data['ATLASSIAN_PASS']
 JIRA_SEARCH_FILTER  = str(secrets_data['JIRA_SEARCH_FILTER'])
 SLACK_CHANNEL       = secrets_data['PRIMARY_SLACK_CHANNEL']
 SLACK_CHANNEL_MAP   = secrets_data['SLACK_CHANNEL_MAP']
-DB_HOST             = "127.0.0.1"
-DB_USER             = "root"
-DB_PASS             = "pass"
-DB_DATABASE         = "events"
+DB_HOST             = secrets_data['DB_HOST']
+DB_USER             = secrets_data['DB_USER']
+DB_PASS             = secrets_data['DB_PASS']
+DB_DATABASE         = secrets_data['DB_DATABASE']
 
 # Connect to the database & get the cursor
 db_connection = mariadb.connect (
