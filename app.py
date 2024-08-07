@@ -30,7 +30,7 @@ from libs.jira_activities import publish_adr
 from libs.events import event_catcher
 
 # Establish some basic logging functionality.
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logging.getLogger().addHandler(logging.StreamHandler(sys.stderr))
 
 print ("********* THIS IS STDOUT ************", file=sys.stdout)
