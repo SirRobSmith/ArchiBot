@@ -63,14 +63,18 @@ DB_PASS             = secrets_data['DB_PASS']
 DB_DATABASE         = secrets_data['DB_DATABASE']
 
 # Connect to the database & get the cursor
-db_connection = mariadb.connect (
-                    user=DB_USER,
-                    password=DB_PASS,
-                    host=DB_HOST,
-                    port=3306,
-                    database=DB_DATABASE
-                )
-
+try: 
+    db_connection = mariadb.connect (
+                        user=DB_USER,
+                        password=DB_PASS,
+                        host=DB_HOST,
+                        port=3306,
+                        database=DB_DATABASE
+                    )
+except mariadb.Error as e:
+    print (e)
+    sys.exit(1)
+    
 db_cursor = db_connection.cursor()
 
 # Make a basic connection to JIRA & Confluence
