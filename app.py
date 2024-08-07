@@ -75,7 +75,10 @@ except mariadb.Error as e:
     print (e)
     logging.ERROR(e)
 
-db_cursor = db_connection.cursor()
+
+else:
+
+    db_cursor = db_connection.cursor()
 
 # Make a basic connection to JIRA & Confluence
 jira        = Jira(url=ATLASSIAN_API_ROOT, username=ATLASSIAN_USER, password=ATLASSIAN_PASS)
