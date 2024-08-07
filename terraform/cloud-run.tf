@@ -56,10 +56,10 @@ resource "google_cloud_run_service" "default" {
             value = var.SECRET_REF
           }
           startup_probe {
-              initial_delay_seconds = 0
-              timeout_seconds = 1
-              period_seconds = 3
-              failure_threshold = 1
+              initial_delay_seconds = 30
+              timeout_seconds = 5
+              period_seconds = 5
+              failure_threshold = 2
               tcp_socket {
                 port = 8080
               }
@@ -110,7 +110,7 @@ resource "google_sql_database_instance" "instance" {
 
   settings {
     tier = "db-f1-micro"
-    
+
     ip_configuration {
       ipv4_enabled                                  = false
       private_network                               = google_compute_network.private_network.self_link
