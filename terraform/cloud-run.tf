@@ -67,8 +67,20 @@ resource "google_cloud_run_service" "default" {
             }
         }
     }
+
+    metadata {
+      annotations = {
+        "autoscaling.knative.dev/maxScale"      = "1000"
+        "run.googleapis.com/cloudsql-instances" = google_sql_database_instance.instance.connection_name
+        "run.googleapis.com/client-name"        = "terraform"
+      }
+    }
+    
   }
 }
+
+
+
 
 data "google_iam_policy" "noauth" {
   binding {
@@ -85,4 +97,16 @@ resource "google_cloud_run_service_iam_policy" "noauth" {
   service     = google_cloud_run_service.default.name
 
   policy_data = data.google_iam_policy.noauth.policy_data
+}
+
+
+resource "google_sql_database_instance" "instance" {
+  name             = var.service_name
+  region           = var.region
+  database_version = "MYSQL_5_7"
+  settings {
+    tier = "db-f1-micro"
+  }
+
+  deletion_protection  = "true"
 }
