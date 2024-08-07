@@ -31,7 +31,7 @@ from libs.events import event_catcher
 
 # Establish some basic logging functionality.
 logging.basicConfig(level=logging.INFO)
-logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+logging.getLogger().addHandler(logging.StreamHandler(sys.stderr))
 
 print ("********* THIS IS STDOUT ************", file=sys.stdout)
 print ("********* THIS IS STDERR ************", file=sys.stderr)
