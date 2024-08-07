@@ -73,8 +73,8 @@ try:
                     )
 except mariadb.Error as e:
     print (e)
-    sys.exit(1)
-    
+    logging.ERROR(e)
+
 db_cursor = db_connection.cursor()
 
 # Make a basic connection to JIRA & Confluence
