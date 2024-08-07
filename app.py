@@ -62,29 +62,30 @@ DB_USER             = secrets_data['DB_USER']
 DB_PASS             = secrets_data['DB_PASS']
 DB_DATABASE         = secrets_data['DB_DATABASE']
 
+"""
 # Connect to the database & get the cursor
 try: 
     db_connection = mariadb.connect (
-                        user=DB_USER,
-                        password=DB_PASS,
-                        host=DB_HOST,
+                        user="root",
+                        password="dbpass",
+                        host="localhost",
                         port=3306,
-                        database=DB_DATABASE
+                        database="mysql"
                     )
 except mariadb.Error as e:
     print (e)
-    logging.ERROR(e)
-
 
 else:
 
     db_cursor = db_connection.cursor()
 
+"""
+
 # Make a basic connection to JIRA & Confluence
 jira        = Jira(url=ATLASSIAN_API_ROOT, username=ATLASSIAN_USER, password=ATLASSIAN_PASS)
 confluence  = Confluence(url=ATLASSIAN_API_ROOT, username=ATLASSIAN_USER, password=ATLASSIAN_PASS)
 
-# Initialise Flask.
+# Initialise Flask. 
 flask_app = Flask(__name__)
 
 # SlackRequestHandler translates WSGI requests to Bolt's interface
