@@ -108,7 +108,7 @@ def flask_publish_agenda():
     Params: None
     """
     
-    return publish_agenda(app, jira, SLACK_CHANNEL, JIRA_SEARCH_FILTER, ATLASSIAN_API_ROOT)
+    return publish_agenda()
 
 # Establish a route for web-hook based requests for ADRs
 @flask_app.route("/publish-adr", methods=["POST"])
@@ -119,7 +119,7 @@ def flask_publish_adr():
     Params: 
     request.json['key'] - The JIRA key for the ADR """
 
-    return publish_adr(app, jira, SLACK_CHANNEL_MAP, request.json['key'], ATLASSIAN_API_ROOT)
+    return publish_adr()
 
 #  A route to deal with inbound web-hooks from Confluence and JIRA.
 @flask_app.route("/events/<source_system>", methods=["POST"])
