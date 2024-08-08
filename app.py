@@ -72,23 +72,6 @@ DB_DATABASE         = secrets_data['DB_CONFIG']['DB_DATABASE']
 
 
 # Connect to the database & get the cursor
-""" 
-try: 
-    db_connection = mariadb.connect (
-                        user=DB_USER,
-                        password=DB_PASS,
-                        host=DB_HOST,
-                        port=3306,
-                        database=DB_DATABASE,
-                        connect_timeout=10
-                    )
-except mariadb.Error as e:
-    print (e, file=sys.stdout)
-
-else:
-
-    db_cursor = db_connection.cursor()
-"""
 if DB_TYPE == "local":
     print("Establishing Local DB Connection")
     db = connect_tcp_socket()
@@ -143,8 +126,8 @@ def flask_publish_adr():
 @require_api_key(key=API_KEY)
 def flask_event_catcher(source_system):
 
-    return event_catcher(db_connection, db_cursor, source_system)
-
+    return event_catcher(source_system)
+ 
 # A simple health-check to validate that the service is at least running
 # and somewhat operational
 @flask_app.route("/health-check", methods=["GET"])
@@ -153,15 +136,5 @@ def flask_health_check():
     A trivial health-check to ensure the app is running.
     Params: None 
     """
-
-    with db.connect() as conn:
-        events_data = conn.execute(
-            sqlalchemy.text(
-                "SELECT * FROM events;"
-            )
-        ).fetchall()
-
-
-    print(events_data, file=sys.stderr)
 
     return Response("Health-Check-OK2", status=200, mimetype='text/plain') 

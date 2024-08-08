@@ -19,6 +19,7 @@ from google.cloud.sql.connector import Connector, IPTypes
 import pymysql
 
 import sqlalchemy
+import app
 
 
 def connect_with_connector() -> sqlalchemy.engine.base.Engine:
@@ -32,12 +33,7 @@ def connect_with_connector() -> sqlalchemy.engine.base.Engine:
     # Cloud Secret Manager (https://cloud.google.com/secret-manager) to help
     # keep secrets safe.
 
-    instance_connection_name = os.environ[
-        "INSTANCE_CONNECTION_NAME"
-    ]  # e.g. 'project:region:instance'
-    db_user = os.environ["DB_USER"]  # e.g. 'my-db-user'
-    db_pass = os.environ["DB_PASS"]  # e.g. 'my-db-password'
-    db_name = os.environ["DB_NAME"]  # e.g. 'my-database'
+  # e.g. 'project:region:instance'
 
     ip_type = IPTypes.PRIVATE if os.environ.get("PRIVATE_IP") else IPTypes.PUBLIC
 
@@ -45,11 +41,11 @@ def connect_with_connector() -> sqlalchemy.engine.base.Engine:
 
     def getconn() -> pymysql.connections.Connection:
         conn: pymysql.connections.Connection = connector.connect(
-            instance_connection_name,
+            app.DB_HOST,
             "pymysql",
-            user=db_user,
-            password=db_pass,
-            db=db_name,
+            user=app.DB_USER,
+            password=app.DB_PASS,
+            db=app.DB_DATABASE,
         )
         return conn
 
