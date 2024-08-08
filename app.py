@@ -28,14 +28,16 @@ from google.cloud import secretmanager
 from libs.jira_activities import publish_agenda
 from libs.jira_activities import publish_adr
 from libs.events import event_catcher
+from libs.connect_connector import connect_with_connector
+from libs.connect_tcp import connect_tcp_socket
+import sqlalchemy
 
 # Establish some basic logging functionality.
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logging.getLogger().addHandler(logging.StreamHandler(sys.stderr))
 
 print ("********* THIS IS STDOUT ************", file=sys.stdout)
 print ("********* THIS IS STDERR ************", file=sys.stderr)
-
 
 # Initalise the connection to Secrets Manager
 secrets_client = secretmanager.SecretManagerServiceClient()
@@ -61,20 +63,24 @@ ATLASSIAN_PASS      = secrets_data['ATLASSIAN_PASS']
 JIRA_SEARCH_FILTER  = str(secrets_data['JIRA_SEARCH_FILTER'])
 SLACK_CHANNEL       = secrets_data['PRIMARY_SLACK_CHANNEL']
 SLACK_CHANNEL_MAP   = secrets_data['SLACK_CHANNEL_MAP']
-DB_HOST             = secrets_data['DB_HOST']
-DB_USER             = secrets_data['DB_USER']
-DB_PASS             = secrets_data['DB_PASS']
-DB_DATABASE         = secrets_data['DB_DATABASE']
+DB_TYPE             = secrets_data['DB_CONFIG']['DB_TYPE']
+DB_HOST             = secrets_data['DB_CONFIG']['DB_HOST']
+DB_PORT             = secrets_data['DB_CONFIG']['DB_PORT']
+DB_USER             = secrets_data['DB_CONFIG']['DB_USER']
+DB_PASS             = secrets_data['DB_CONFIG']['DB_PASS']
+DB_DATABASE         = secrets_data['DB_CONFIG']['DB_DATABASE']
 
 
 # Connect to the database & get the cursor
+""" 
 try: 
     db_connection = mariadb.connect (
                         user=DB_USER,
                         password=DB_PASS,
                         host=DB_HOST,
                         port=3306,
-                        database=DB_DATABASE
+                        database=DB_DATABASE,
+                        connect_timeout=10
                     )
 except mariadb.Error as e:
     print (e, file=sys.stdout)
@@ -82,7 +88,12 @@ except mariadb.Error as e:
 else:
 
     db_cursor = db_connection.cursor()
-
+"""
+if DB_TYPE == "local":
+    print("Establishing Local DB Connection")
+    db = connect_tcp_socket()
+elif DB_TYPE == "cloudsql":
+    db = connect_with_connector()
 
 
 # Make a basic connection to JIRA & Confluence
@@ -143,4 +154,14 @@ def flask_health_check():
     Params: None 
     """
 
-    return Response("Health-Check-OK", status=200, mimetype='text/plain') 
+    with db.connect() as conn:
+        events_data = conn.execute(
+            sqlalchemy.text(
+                "SELECT * FROM events;"
+            )
+        ).fetchall()
+
+
+    print(events_data, file=sys.stderr)
+
+    return Response("Health-Check-OK2", status=200, mimetype='text/plain') 
