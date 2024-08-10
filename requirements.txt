@@ -8,6 +8,7 @@ arrow
 flask-api-key
 flask-api-key-decorator
 mariadb
+certifi
 jsonschema
 SQLAlchemy==2.0.24
 PyMySQL==1.1.1
