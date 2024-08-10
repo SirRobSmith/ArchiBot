@@ -33,7 +33,7 @@ from libs.connect_tcp import connect_tcp_socket
 import sqlalchemy
 
 # Establish some basic logging functionality.
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logging.getLogger().addHandler(logging.StreamHandler(sys.stderr))
 
 print ("********* THIS IS STDOUT ************", file=sys.stdout)
