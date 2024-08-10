@@ -14,3 +14,4 @@ SQLAlchemy==2.0.24
 PyMySQL==1.1.1
 cloud-sql-python-connector==1.2.4
 functions-framework==3.5.0
+cryptography==42.0.8
