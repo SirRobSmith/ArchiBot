@@ -38,7 +38,7 @@ jobs:
         run: 'gcloud info'
 
       - name: 'fs-debug'
-        run: 'ls -halt /app'
+        run: 'ls -halt'
 
       - name: 'gcloud-artefact-repos'
         run: 'gcloud artifacts repositories list'  
