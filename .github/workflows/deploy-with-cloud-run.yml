@@ -25,6 +25,9 @@ jobs:
       - name: 'docker-credential-helper-setup'
         run: 'gcloud auth configure-docker ${{ vars.ARTEFACT_REGISTRY_HOSTNAME}}'
 
+      - name: 'import-service-account-details'
+        run: 'echo ${{ secrets.GCP_CREDENTIALS_BASE64 }} | base64 -d > credentials.json'
+
       - name: 'build-docker-image'
         run: 'docker build -t ${{ vars.APP_NAME }}:$GITHUB_SHA .; docker images | grep ${{ vars.APP_NAME }}'
 
@@ -33,6 +36,9 @@ jobs:
 
       - name: 'gcloud-info'
         run: 'gcloud info'
+
+      - name: 'fs-debug'
+        run: 'ls -halt /app'
 
       - name: 'gcloud-artefact-repos'
         run: 'gcloud artifacts repositories list'  

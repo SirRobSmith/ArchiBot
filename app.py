@@ -137,4 +137,4 @@ def flask_health_check():
     Params: None 
     """
 
-    return Response("Health-Check-OK2", status=200, mimetype='text/plain') 
+    return Response("Health-Check-OK", status=200, mimetype='text/plain') 

@@ -55,6 +55,10 @@ resource "google_cloud_run_service" "default" {
             name = "SECRET_REF"
             value = var.SECRET_REF
           }
+          env {
+            name = "GOOGLE_APPLICATION_CREDENTIALS"
+            value = "credentials.json"
+          }
           startup_probe {
               initial_delay_seconds = 5
               timeout_seconds = 1
