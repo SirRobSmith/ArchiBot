@@ -5,9 +5,10 @@
 
 import arrow
 from libs.template import load_template
-from flask import Response
+from flask import Response, request
+import app
 
-def publish_agenda(app, jira, slack_channel, jira_search_filter, atlassian_api_root):
+def publish_agenda():
     """
         publish_agenda.py   Handles the publishing of the technical governance
                             agenda. 
@@ -19,8 +20,8 @@ def publish_agenda(app, jira, slack_channel, jira_search_filter, atlassian_api_r
     """
 
     # Search for issues which fit the criteria
-    search_jql       = f'filter = {jira_search_filter}'
-    agenda_issues   = jira.jql(search_jql)
+    search_jql       = f'filter = {app.JIRA_SEARCH_FILTER}'
+    agenda_issues   = app.jira.jql(search_jql)
 
     # It's a bit crude, but find next Wednesday to build the header message
     the_time_now = arrow.utcnow()
@@ -37,8 +38,8 @@ def publish_agenda(app, jira, slack_channel, jira_search_filter, atlassian_api_r
     message_agenda = load_template("tda_agenda_header", template_config)
 
     # Post it to Slack
-    app.client.chat_postMessage(
-        channel=slack_channel,
+    app.app.client.chat_postMessage(
+        channel=app.SLACK_CHANNEL,
         blocks=message_agenda,
         text=f"TDA Agenda: {next_wednesday_date}"
     )
@@ -53,8 +54,8 @@ def publish_agenda(app, jira, slack_channel, jira_search_filter, atlassian_api_r
         message_agenda = load_template("tda_agenda_noitems", template_config)
 
         # Post it to Slack
-        app.client.chat_postMessage(
-            channel=slack_channel,
+        app.app.client.chat_postMessage(
+            channel=app.SLACK_CHANNEL,
             blocks=message_agenda,
             text=f"TDA Cancelled: {next_wednesday_date}"
         )
@@ -67,7 +68,7 @@ def publish_agenda(app, jira, slack_channel, jira_search_filter, atlassian_api_r
             issue_author    = agenda_issue['fields']['creator']['displayName']
             issue_summary   = agenda_issue['fields']['summary']
             issue_key       = agenda_issue['key']
-            issue_link      = atlassian_api_root+"/browse/"+issue_key
+            issue_link      = app.atlassian_api_root+"/browse/"+issue_key
 
 
             # Prepare the template data
@@ -82,22 +83,22 @@ def publish_agenda(app, jira, slack_channel, jira_search_filter, atlassian_api_r
             message_agenda = load_template("tda_agenda", template_config)
 
             # Post it to Slack
-            app.client.chat_postMessage(
-                channel=slack_channel,
+            app.app.client.chat_postMessage(
+                channel=app.SLACK_CHANNEL,
                 blocks=message_agenda,
                 text="TDA Agenda Item"
             )
 
     return Response("OK", status=200, mimetype='text/plain')
 
-def publish_adr(app, jira, slack_channel_map, jira_key, atlassian_api_root):
+def publish_adr():
     """ 
     Broadcasts the state of an ADR, largely this will be triggered once
     the governance process has started for a given ADR.
     """
 
     # Get issue data from jira
-    issue_data = jira.issue(jira_key)
+    issue_data = app.jira.issue(request.json['key'])
 
     # Identify the stuff we want to post to Slack.
     impacted_value_stream_str       = str()
@@ -106,7 +107,7 @@ def publish_adr(app, jira, slack_channel_map, jira_key, atlassian_api_root):
     issue_assignee                  = str(issue_data['fields']['assignee']['displayName'])
     issue_status                    = issue_data['fields']['customfield_10241']['value']
     issue_key                       = issue_data['key']
-    issue_link                      = atlassian_api_root+"/browse/"+issue_key
+    issue_link                      = app.ATLASSIAN_API_ROOT+"/browse/"+issue_key
 
     # We may process ADRs which have no impacted value-stream
     if type(issue_impacted_value_streams) is list:
@@ -129,15 +130,15 @@ def publish_adr(app, jira, slack_channel_map, jira_key, atlassian_api_root):
 
             # A bit crude - map the impacted value-stream to the respective slack channel.
             if impacted_value_stream['value'] == "Mortgages":
-                vs_slack_id = slack_channel_map['Mortgages']
+                vs_slack_id = app.SLACK_CHANNEL_MAP['Mortgages']
             if impacted_value_stream['value'] == "Enterprise":
-                vs_slack_id = slack_channel_map['Enterprise']
+                vs_slack_id = app.SLACK_CHANNEL_MAP['Enterprise']
             if impacted_value_stream['value'] == "Platform":
-                vs_slack_id = slack_channel_map['Platform']
+                vs_slack_id = app.SLACK_CHANNEL_MAP['Platform']
             if impacted_value_stream['value'] == "Savings":
-                vs_slack_id = slack_channel_map['Savings']
+                vs_slack_id = app.SLACK_CHANNEL_MAP['Savings']
             if impacted_value_stream['value'] == "Business Banking":
-                vs_slack_id = slack_channel_map['Business Banking']
+                vs_slack_id = app.SLACK_CHANNEL_MAP['Business Banking']
 
             template_config = {
                 "%KEY%" : issue_key,
@@ -150,7 +151,7 @@ def publish_adr(app, jira, slack_channel_map, jira_key, atlassian_api_root):
 
             message_adr = load_template("adr_published", template_config)
 
-            app.client.chat_postMessage(
+            app.app.client.chat_postMessage(
                 channel=vs_slack_id,
                 blocks=message_adr,
                 text="ADR Published"

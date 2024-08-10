@@ -28,14 +28,16 @@ from google.cloud import secretmanager
 from libs.jira_activities import publish_agenda
 from libs.jira_activities import publish_adr
 from libs.events import event_catcher
+from libs.connect_connector import connect_with_connector
+from libs.connect_tcp import connect_tcp_socket
+import sqlalchemy
 
 # Establish some basic logging functionality.
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logging.getLogger().addHandler(logging.StreamHandler(sys.stderr))
 
 print ("********* THIS IS STDOUT ************", file=sys.stdout)
 print ("********* THIS IS STDERR ************", file=sys.stderr)
-
 
 # Initalise the connection to Secrets Manager
 secrets_client = secretmanager.SecretManagerServiceClient()
@@ -61,28 +63,20 @@ ATLASSIAN_PASS      = secrets_data['ATLASSIAN_PASS']
 JIRA_SEARCH_FILTER  = str(secrets_data['JIRA_SEARCH_FILTER'])
 SLACK_CHANNEL       = secrets_data['PRIMARY_SLACK_CHANNEL']
 SLACK_CHANNEL_MAP   = secrets_data['SLACK_CHANNEL_MAP']
-DB_HOST             = secrets_data['DB_HOST']
-DB_USER             = secrets_data['DB_USER']
-DB_PASS             = secrets_data['DB_PASS']
-DB_DATABASE         = secrets_data['DB_DATABASE']
+DB_TYPE             = secrets_data['DB_CONFIG']['DB_TYPE']
+DB_HOST             = secrets_data['DB_CONFIG']['DB_HOST']
+DB_PORT             = secrets_data['DB_CONFIG']['DB_PORT']
+DB_USER             = secrets_data['DB_CONFIG']['DB_USER']
+DB_PASS             = secrets_data['DB_CONFIG']['DB_PASS']
+DB_DATABASE         = secrets_data['DB_CONFIG']['DB_DATABASE']
 
 
 # Connect to the database & get the cursor
-try: 
-    db_connection = mariadb.connect (
-                        user=DB_USER,
-                        password=DB_PASS,
-                        host=DB_HOST,
-                        port=3306,
-                        database=DB_DATABASE
-                    )
-except mariadb.Error as e:
-    print (e, file=sys.stdout)
-
-else:
-
-    db_cursor = db_connection.cursor()
-
+if DB_TYPE == "local":
+    print("Establishing Local DB Connection")
+    db = connect_tcp_socket()
+elif DB_TYPE == "cloudsql":
+    db = connect_with_connector()
 
 
 # Make a basic connection to JIRA & Confluence
@@ -114,7 +108,7 @@ def flask_publish_agenda():
     Params: None
     """
     
-    return publish_agenda(app, jira, SLACK_CHANNEL, JIRA_SEARCH_FILTER, ATLASSIAN_API_ROOT)
+    return publish_agenda()
 
 # Establish a route for web-hook based requests for ADRs
 @flask_app.route("/publish-adr", methods=["POST"])
@@ -125,15 +119,15 @@ def flask_publish_adr():
     Params: 
     request.json['key'] - The JIRA key for the ADR """
 
-    return publish_adr(app, jira, SLACK_CHANNEL_MAP, request.json['key'], ATLASSIAN_API_ROOT)
+    return publish_adr()
 
 #  A route to deal with inbound web-hooks from Confluence and JIRA.
 @flask_app.route("/events/<source_system>", methods=["POST"])
 @require_api_key(key=API_KEY)
 def flask_event_catcher(source_system):
 
-    return event_catcher(db_connection, db_cursor, source_system)
-
+    return event_catcher(source_system)
+ 
 # A simple health-check to validate that the service is at least running
 # and somewhat operational
 @flask_app.route("/health-check", methods=["GET"])
@@ -143,4 +137,4 @@ def flask_health_check():
     Params: None 
     """
 
-    return Response("Health-Check-OK", status=200, mimetype='text/plain') 
+    return Response("Health-Check-OK2", status=200, mimetype='text/plain') 

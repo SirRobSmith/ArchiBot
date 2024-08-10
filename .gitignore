@@ -8,3 +8,4 @@ slack_channels.json.prod
 useful_values.json
 jira_issue_payload.json
 run-app.sh
+local-build.sh

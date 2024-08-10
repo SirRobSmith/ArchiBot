@@ -2,18 +2,17 @@ from jsonschema import validate
 from jsonschema.exceptions import ValidationError
 from flask import Flask, request, Response
 import time
+import sqlalchemy
+import app
 
 
-def event_catcher(db_connection, db_cursor, source_system):    
+def event_catcher(source_system):    
     """
         flask_event_catcher     A highly generic end-point, designed to catch
                                 a range of requests from a number of sources.
                                 This catcher places data into a strict MariaDB
                                 data structure for now..
     """
-
-
-    payload = request.json
 
     # Validate the message meets the required format, we use jsonschema for this
     message_schema = {
@@ -42,15 +41,17 @@ def event_catcher(db_connection, db_cursor, source_system):
     
     else:
 
-        # Commit the data to the database
+        # Generate the date in unix format
         source_timestamp = time.time()
 
-        db_cursor.execute(
-            "INSERT INTO events (source_timestamp, source_system, contributor, event_type) VALUES (?, ?, ?, ?)", 
-            (source_timestamp, source_system, request.json['contributor'], request.json['event_type']))
-        
-        db_connection.commit()
-        #db_connection.close()
+        with app.db.connect() as conn:
+            # Execute the insertion of data
+            event = conn.execute(
+                sqlalchemy.text(
+                    f"INSERT INTO events (source_timestamp, source_system, contributor, event_type) VALUES ('{source_timestamp}', '{source_system}', '{request.json['contributor']}', '{request.json['event_type']}')"
+                )
+            )
+            conn.commit()
         
 
         return Response("Accepted", status=201, mimetype='text/plain')
