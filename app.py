@@ -16,6 +16,7 @@ import sys
 import json
 import logging
 import mariadb
+import certifi
 from jsonschema import validate
 from jsonschema.exceptions import ValidationError
 from slack_bolt import App
