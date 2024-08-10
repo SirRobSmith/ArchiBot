@@ -35,7 +35,7 @@ def connect_with_connector() -> sqlalchemy.engine.base.Engine:
 
   # e.g. 'project:region:instance'
 
-    ip_type = IPTypes.PRIVATE if os.environ.get("PRIVATE_IP") else IPTypes.PUBLIC
+    ip_type = IPTypes.PRIVATE if app.DB_TYPE == "cloudsql" else IPTypes.PUBLIC
 
     connector = Connector(ip_type)
 
