@@ -4,6 +4,7 @@ from flask import Flask, request, Response
 import time
 import sqlalchemy
 import app
+import sys
 
 
 def event_catcher(source_system):    
@@ -46,12 +47,21 @@ def event_catcher(source_system):
 
         with app.db.connect() as conn:
             # Execute the insertion of data
-            event = conn.execute(
-                sqlalchemy.text(
-                    f"INSERT INTO events (source_timestamp, source_system, contributor, event_type) VALUES ('{source_timestamp}', '{source_system}', '{request.json['contributor']}', '{request.json['event_type']}')"
-                )
-            )
-            conn.commit()
-        
 
-        return Response("Accepted", status=201, mimetype='text/plain')
+
+            try:
+                event = conn.execute(
+                    sqlalchemy.text(
+                        f"INSERT INTO events (source_timestamp, source_system, contributor, event_type) VALUES ('{source_timestamp}', '{source_system}', '{request.json['contributor']}', '{request.json['event_type']}')"
+                    )
+                )
+                conn.commit()
+
+            except Exception as e:
+
+                print (e, file=sys.stderr)
+                return Response("Failed", status=500, mimetype='text/plain')
+
+            else:
+
+                return Response("Accepted", status=201, mimetype='text/plain')
