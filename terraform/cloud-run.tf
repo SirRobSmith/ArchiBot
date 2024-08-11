@@ -130,6 +130,7 @@ resource "google_sql_database_instance" "instance" {
 resource "google_compute_network" "private_network" {
 
   name = "${var.service_name}-network"
+  auto_create_subnetworks = false
   
 }
 
