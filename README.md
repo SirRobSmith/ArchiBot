@@ -8,16 +8,6 @@ ArchiBot has been written (_badly_) in Python 3.12.4, containerised alongside gu
 ## Cloud Architecture
 ![Simple Cloud Architecture](/documentation/simple-cloud-architecture.png "Simple Cloud Architecture")
 
-## Basic Functionality
-ArchiBot has a small amount of functionality currently, this has been described in the sequence diagrams below.
-
-![Sequence Diagrams](/documentation/sequence-diagrams.png "Sequence Diagrams")
-
-### Publish ADR
-Publishes Architecture Decision Records to Slack Channels based on the 'Impacted Value Streams' custom field in JIRA.
-
-
-
 Key Points
 - The application and its dependencies are containerised, stored in an artefact registery and run within Google Cloud Run
 - The application is fronted by a simple application load balancer which holds and provides offloading for the certificate
@@ -26,6 +16,19 @@ Key Points
 - The Cloud SQL instance sits in a private VPC and uses private-service-connect to facilitate its exposure to Cloud Run
 - Secrets are stored in Google Secrets Manager
 
+## Basic Functionality
+ArchiBot has a small amount of functionality currently, this has been described in the sequence diagrams below.
+
+![Sequence Diagrams](/documentation/sequence-diagrams.png "Sequence Diagrams")
+
+### Publish ADR
+Publishes Architecture Decision Records to Slack Channels based on the 'Impacted Value Streams' custom field in JIRA.
+
+### Publish Agenda
+On invocation queries JIRA and obtains a list of items ready for governance. Publishes data to Slack.
+
+### Event-Catcher
+Catches event data from JIRA and Confluence, storing limited meta-data in a SQL database.
 
 # GitHub Configuration
 The project currently expects to exist in Github and uses Github Actions for deployment. The following configuration is required for this functionality to work.
