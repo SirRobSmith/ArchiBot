@@ -38,119 +38,118 @@ variable sql_root_password {
   description = "The root password for MySQL"
 }
 
-resource "google_cloud_run_service" "default" {
+
+
+resource "google_cloud_run_v2_service" "default" {
   name      = var.service_name
   location  = var.zone
   project   = var.project_name
+  ingress   = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
 
   template {
-    spec {
-      containers {
-        image = var.docker_image_location
-          env {
-            name = "IMAGE_DETAILS"
-            value = var.docker_image_location
-          }
-          env {
-            name = "SECRET_REF"
-            value = var.SECRET_REF
-          }
-          env {
-            name = "GOOGLE_APPLICATION_CREDENTIALS"
-            value = "credentials.json"
-          }
-          startup_probe {
-              initial_delay_seconds = 5
-              timeout_seconds = 1
-              period_seconds = 3
-              failure_threshold = 1
-              tcp_socket {
-                port = 8080
-              }
-            }
-            liveness_probe {
-              http_get {
-                path = "/health-check"
-                port = 8080
-              }
-            }
+    containers {
+      image = var.docker_image_location
+        env {
+          name = "IMAGE_DETAILS"
+          value = var.docker_image_location
         }
-    }
-
-    metadata {
-      annotations = {
-        "autoscaling.knative.dev/maxScale"      = "1000"
-        "run.googleapis.com/cloudsql-instances" = google_sql_database_instance.instance.connection_name
-        "run.googleapis.com/client-name"        = "terraform"
+        env {
+          name = "SECRET_REF"
+          value = var.SECRET_REF
+        }
+        env {
+          name = "GOOGLE_APPLICATION_CREDENTIALS"
+          value = "credentials.json"
+        }
+        startup_probe {
+            initial_delay_seconds = 5
+            timeout_seconds = 1
+            period_seconds = 3
+            failure_threshold = 1
+            tcp_socket {
+              port = 8080
+            }
+          }
+          liveness_probe {
+            http_get {
+              path = "/health-check"
+              port = 8080
+            }
+          }
       }
-    }
-
+      vpc_access {
+        network_interfaces {
+          network = google_compute_network.project_network.name
+          subnetwork = google_compute_subnetwork.cloudsql_subnet.name
+        }
+      }
   }
 }
 
-data "google_iam_policy" "noauth" {
-  binding {
-    role = "roles/run.invoker"
-    members = [
-      "allUsers",
-    ]
-  }
+resource "google_cloud_run_service_iam_binding" "default" {
+  location = google_cloud_run_v2_service.default.location
+  service  = google_cloud_run_v2_service.default.name
+  role     = "roles/run.invoker"
+  members = [
+    "allUsers"
+  ]
 }
 
-resource "google_cloud_run_service_iam_policy" "noauth" {
-  location    = google_cloud_run_service.default.location
-  project     = google_cloud_run_service.default.project
-  service     = google_cloud_run_service.default.name
-
-  policy_data = data.google_iam_policy.noauth.policy_data
-}
-
+#
+#
+#   SQL Configuration
 
 resource "google_sql_database_instance" "instance" {
-  name             = var.service_name
-  region           = var.region
-  database_version = "MYSQL_5_7"
-  root_password = var.sql_root_password
+  name              = "${var.service_name}-sql"
+  region            = var.region
+  database_version  = "MYSQL_5_7"
+  root_password     = var.sql_root_password
 
   settings {
     tier = "db-f1-micro"
 
     ip_configuration {
+      psc_config {
+        psc_enabled               = true
+        allowed_consumer_projects = []
+      }
+
       ipv4_enabled                                  = false
-      private_network                               = google_compute_network.private_network.self_link
+      private_network                               = google_compute_network.project_network.self_link
       enable_private_path_for_google_cloud_services = true
     }
     
   }
 
-  deletion_protection  = "true"
+  deletion_protection  = "false"
 
 }
 
-resource "google_compute_network" "private_network" {
 
-  name = "${var.service_name}-network"
+#
+#
+#   VPC Configuration
+
+# Create the basic VPC for the App. 
+resource "google_compute_network" "project_network" {
+  name                    = "${var.service_name}-network"
   auto_create_subnetworks = false
-  
 }
 
-resource "google_compute_global_address" "private_ip_address" {
-
-  name          = "sql-private-ip-address"
-  purpose       = "VPC_PEERING"
-  address_type  = "INTERNAL"
-  prefix_length = 16
-  network       = google_compute_network.private_network.id
-
+# Add a subnet for our Cloud SQL instance
+resource "google_compute_subnetwork" "cloudsql_subnet" {
+  name          = "${var.service_name}-sql-subnetwork"
+  ip_cidr_range = "10.2.0.0/24"
+  region        = var.region
+  network       = google_compute_network.project_network.id
 }
 
-resource "google_service_networking_connection" "private_vpc_connection" {
+#
+#
+#   Certification Configuration
 
-  network                 = google_compute_network.private_network.id
-  service                 = "servicenetworking.googleapis.com"
-  reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
-}
-
-resource "random_id" "db_name_suffix" {
-  byte_length = 4
+resource "google_certificate_manager_dns_authorization" "instance" {
+  name        = "binaryrage-com-dns-auth"
+  description = "Default"
+  domain      = "archibot.binaryrage.com"
 }

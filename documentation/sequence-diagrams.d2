@@ -1,0 +1,50 @@
+
+sequence_diagram: {
+    shape: sequence_diagram
+    label: ArchiBot Sequence Diagrams
+
+    user: {
+        label: User
+    }
+    jira: {
+        label: JIRA
+    }
+    jira-workflow: {
+        label: JIRA Workflow
+    }
+    archibot: {
+        label: ArchiBot
+    }
+    slack: {
+        label: Slack
+    }
+    database:{
+        label: Database
+    }
+    
+    publish-adr: {
+        label: Publish ADR
+
+        user -> jira-workflow: Set ADR Status\n(Ready for Review)
+        jira-workflow -> archibot: POST\n/publish-adr
+        archibot -> jira: GET ADR Data
+        archibot -> slack: (For Each \nImpacted VS)\nMessage Channel
+    }
+
+    publish-agenda: {
+        label: Publish TDA Agenda
+
+         jira-workflow -> archibot: Timer
+         archibot -> jira: Run Query\nGet TDA Items
+         archibot -> slack: Message TDA Channel
+    }
+
+    event-catcher:{
+        label: Event Catcher
+
+        jira-workflow -> archibot: Trigger\nVarious
+        archibot  -> database: Store Data
+    }
+
+
+}
