@@ -99,7 +99,35 @@ resource "google_cloud_run_service_iam_binding" "default" {
 #
 #   SQL Configuration
 
+resource "google_sql_database_instance" "default" {
+  name             = "${var.service_name}-sql"
+  database_version = "MYSQL_5_7"
+  region           = var.region
+  root_password    = var.sql_root_password
 
+  settings {
+    # Second-generation instance tiers are based on the machine
+    # type. See argument reference below.
+    tier                        = "db-f1-micro"
+    edition                     = "ENTERPRISE"
+    availability_type           = "REGIONAL"
+    deletion_protection_enabled = "false"
+    disk_autoresize             = "true"
+    disk_size                   = "10"
+    disk_type                   = "PD_SSD"
+    
+    ip_configuration {
+      ipv4_enabled = false
+      private_network = google_compute_network.project_network.self_link
+    }
+    backup_configuration {
+      binary_log_enabled = true
+      enabled = true
+      start_time = "01:00"
+      transaction_log_retention_days = 7
+    }
+  }
+}
 
 
 #
