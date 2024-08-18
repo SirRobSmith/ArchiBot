@@ -99,31 +99,7 @@ resource "google_cloud_run_service_iam_binding" "default" {
 #
 #   SQL Configuration
 
-resource "google_sql_database_instance" "instance" {
-  name              = "${var.service_name}-sql"
-  region            = var.region
-  database_version  = "MYSQL_5_7"
-  root_password     = var.sql_root_password
 
-  settings {
-    tier = "db-f1-micro"
-
-    ip_configuration {
-      psc_config {
-        psc_enabled               = true
-        allowed_consumer_projects = []
-      }
-
-      ipv4_enabled                                  = false
-      private_network                               = google_compute_network.project_network.self_link
-      enable_private_path_for_google_cloud_services = true
-    }
-    
-  }
-
-  deletion_protection  = "false"
-
-}
 
 
 #
