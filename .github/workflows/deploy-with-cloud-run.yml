@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - main
-      
+
   workflow_dispatch:
 
 
@@ -20,6 +20,9 @@ jobs:
         uses: 'google-github-actions/auth@v2'
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: 'terraform'
+        run: 'terraform --version'
 
       - name: 'gcloud-cli-setup'
         uses: 'google-github-actions/setup-gcloud@v2'
