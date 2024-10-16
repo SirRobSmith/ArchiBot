@@ -10,12 +10,7 @@ flask-api-key-decorator
 mariadb
 certifi
 jsonschema
-#SQLAlchemy==2.0.24
-#PyMySQL==1.1.1
-#cloud-sql-python-connector==1.2.4
-#functions-framework==3.5.0
 SQLAlchemy==2.0.32
 PyMySQL
 cloud-sql-python-connector==1.11.0
 functions-framework==3.8.1
-#cryptography==42.0.8

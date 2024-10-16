@@ -6,3 +6,5 @@ credentials.json
 *.sh
 *.bak
 /reference/*
+/alembic/*
+alembic.ini
