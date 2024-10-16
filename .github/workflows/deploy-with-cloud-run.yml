@@ -61,7 +61,7 @@ jobs:
       - name: 'terraform'
         run: |
 
-          'terraform --version'
+          terraform --version
           echo "- Change to the terraform directory"
           cd terraform
           echo "- Export Secret to credentials.json"
