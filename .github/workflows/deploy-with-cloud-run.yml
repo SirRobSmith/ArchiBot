@@ -21,9 +21,6 @@ jobs:
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-      - name: 'terraform'
-        run: 'terraform --version'
-
       - name: 'gcloud-cli-setup'
         uses: 'google-github-actions/setup-gcloud@v2'
 
@@ -62,6 +59,8 @@ jobs:
 
       - name: 'terraform'
         run: |
+
+          'terraform --version'
           echo "- Change to the terraform directory"
           cd terraform
           echo "- Export Secret to credentials.json"
