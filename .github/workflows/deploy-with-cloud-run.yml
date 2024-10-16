@@ -59,7 +59,7 @@ jobs:
 
       - name: 'terraform'
         run: |
-
+          'brew install hashicorp/tap/terraform'
           'terraform --version'
           echo "- Change to the terraform directory"
           cd terraform
