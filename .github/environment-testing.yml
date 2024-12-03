@@ -1,0 +1,22 @@
+name: 'Test Environment Variable Stuff'
+
+on: 
+
+  workflow_dispatch:
+    - main
+
+
+jobs:
+    print-variable:
+      runs-on: ubuntu-latest
+
+      strategy:
+        matrix:
+          environment: [production]
+
+      environment: ${{ matrix.environment }}
+
+      steps:
+        - name: Print Var
+          run: echo ${{ matrix.environment }}
+
