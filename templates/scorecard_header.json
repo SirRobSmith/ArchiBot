@@ -1,0 +1,12 @@
+[
+    {
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": "Greetings Earthling 👋 Below you'll find a list s of the tasks being undertaken by members of Architecture & Analysis to contribute to our corporate score-card."
+        }
+    },
+    {
+        "type": "divider"
+    }
+]

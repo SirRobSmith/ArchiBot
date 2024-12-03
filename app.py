@@ -15,10 +15,6 @@ import os
 import sys
 import json
 import logging
-import mariadb
-import certifi
-from jsonschema import validate
-from jsonschema.exceptions import ValidationError
 from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
 from atlassian import Jira
@@ -28,17 +24,15 @@ from require_api_key import require_api_key
 from google.cloud import secretmanager
 from libs.jira_activities import publish_agenda
 from libs.jira_activities import publish_adr
+from libs.jira_activities import scorecard_tasks_by_user
 from libs.events import event_catcher
 from libs.connect_connector import connect_with_connector
 from libs.connect_tcp import connect_tcp_socket
-import sqlalchemy
+
 
 # Establish some basic logging functionality.
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger().addHandler(logging.StreamHandler(sys.stderr))
-
-print ("********* THIS IS STDOUT ************", file=sys.stdout)
-print ("********* THIS IS STDERR ************", file=sys.stderr)
 
 # Initalise the connection to Secrets Manager
 secrets_client = secretmanager.SecretManagerServiceClient()
@@ -57,34 +51,60 @@ app = App(
     token=secrets_data['SLACK_BOT_TOKEN'])
 
 # Define some friendlier, more usable variables from the returned secrets_data json
-API_KEY             = secrets_data['API_KEY']
-ATLASSIAN_API_ROOT  = secrets_data['ATLASSIAN_API_ROOT']
-ATLASSIAN_USER      = secrets_data['ATLASSIAN_USER']
-ATLASSIAN_PASS      = secrets_data['ATLASSIAN_PASS']
-JIRA_SEARCH_FILTER  = str(secrets_data['JIRA_SEARCH_FILTER'])
-SLACK_CHANNEL       = secrets_data['PRIMARY_SLACK_CHANNEL']
-SLACK_CHANNEL_MAP   = secrets_data['SLACK_CHANNEL_MAP']
-DB_TYPE             = secrets_data['DB_CONFIG']['DB_TYPE']
-DB_HOST             = secrets_data['DB_CONFIG']['DB_HOST']
-DB_PORT             = secrets_data['DB_CONFIG']['DB_PORT']
-DB_USER             = secrets_data['DB_CONFIG']['DB_USER']
-DB_PASS             = secrets_data['DB_CONFIG']['DB_PASS']
-DB_DATABASE         = secrets_data['DB_CONFIG']['DB_DATABASE']
+API_KEY                     = secrets_data['API_KEY']
+ATLASSIAN_API_ROOT          = secrets_data['CREDENTIALS']['ATLASSIAN']['API_ROOT']
+ATLASSIAN_JIRA_USER         = secrets_data['CREDENTIALS']['ATLASSIAN']['JIRA']['USERNAME']
+ATLASSIAN_JIRA_PASS         = secrets_data['CREDENTIALS']['ATLASSIAN']['JIRA']['PASSWORD']
+ATLASSIAN_CONFLUENCE_USER   = secrets_data['CREDENTIALS']['ATLASSIAN']['CONFLUENCE']['PASSWORD']
+ATLASSIAN_CONFLUENCE_PASS   = secrets_data['CREDENTIALS']['ATLASSIAN']['CONFLUENCE']['PASSWORD']
+JIRA_SEARCH_FILTER          = str(secrets_data['JIRA_SEARCH_FILTER'])
+SLACK_CHANNEL               = secrets_data['PRIMARY_SLACK_CHANNEL']
+SLACK_CHANNEL_MAP           = secrets_data['SLACK_CHANNEL_MAP']
+AA_SLACK_CHANNEL            = secrets_data['PRIMARY_SLACK_CHANNEL'] # Tenporary
+DB_TYPE                     = secrets_data['DB_CONFIG']['DB_TYPE']
+DB_HOST                     = secrets_data['DB_CONFIG']['DB_HOST']
+DB_PORT                     = secrets_data['DB_CONFIG']['DB_PORT']
+DB_USER                     = secrets_data['DB_CONFIG']['DB_USER']
+DB_PASS                     = secrets_data['DB_CONFIG']['DB_PASS']
+DB_DATABASE                 = secrets_data['DB_CONFIG']['DB_DATABASE']
+SCORECARD_MAP               = [
+    {
+        "filter_id": "11131",
+        "name": "To be the UK's fastest growing retail bank"
+    },
+    {
+        "filter_id": "11132",
+        "name": "To be one of the UK's most recommended companies"
+    },
+    {
+        "filter_id": "11133",
+        "name": "To be the UK's best place to work"
+    }        
+]
 
-
-# Connect to the database & get the cursor
+# Establish basic Database Connectivity.
 if DB_TYPE == "local":
     print("Establishing Local DB Connection")
     db = connect_tcp_socket()
+
 elif DB_TYPE == "cloudsql":
+    print("Establishing CloudSQL DB Connection")
     db = connect_with_connector()
 
 
 # Make a basic connection to JIRA & Confluence
-jira        = Jira(url=ATLASSIAN_API_ROOT, username=ATLASSIAN_USER, password=ATLASSIAN_PASS)
-confluence  = Confluence(url=ATLASSIAN_API_ROOT, username=ATLASSIAN_USER, password=ATLASSIAN_PASS)
+jira        =   Jira(
+                    url=ATLASSIAN_API_ROOT,
+                    username=ATLASSIAN_JIRA_USER,
+                    password=ATLASSIAN_JIRA_PASS
+                )
+confluence  =   Confluence(
+                    url=ATLASSIAN_API_ROOT,
+                    username=ATLASSIAN_CONFLUENCE_USER,
+                    password=ATLASSIAN_CONFLUENCE_PASS
+                )
 
-# Initialise Flask. 
+# Initialise Flask to handle other inbound webhooks and requests
 flask_app = Flask(__name__)
 
 # SlackRequestHandler translates WSGI requests to Bolt's interface
@@ -99,26 +119,33 @@ def slack_events():
     """
     return handler.handle(request)
 
-# Establish a route for web-hook based requests to publish the agenda
-@flask_app.route("/publish-agenda", methods=["POST"])
+@flask_app.route("/tda/agenda/publish", methods=["POST"])
 @require_api_key(key=API_KEY)
 def flask_publish_agenda():
     """
-    Triggers the common function for publishing the agenda.
-    This function has no payload.
-    Params: None
+    Triggers the creation of the TDA agenda
+
+    Args:
+    None: Authenticating with API Key + POST triggers this end point.
+
+    Returns:
+    HTTP 201 + OK
     """
-    
+
     return publish_agenda()
 
-# Establish a route for web-hook based requests for ADRs
-@flask_app.route("/publish-adr", methods=["POST"])
+@flask_app.route("/artefact/adr/publish", methods=["POST"])
 @require_api_key(key=API_KEY)
 def flask_publish_adr():
     """
     Triggers the common function for sharing details of the ADR.
-    Params: 
-    request.json['key'] - The JIRA key for the ADR """
+
+    Args: 
+    request.json['key'] - The JIRA key for the ADR 
+
+    Returns:
+    HTTP 201 + "OK"
+    """
 
     return publish_adr()
 
@@ -126,16 +153,57 @@ def flask_publish_adr():
 @flask_app.route("/events/<source_system>", methods=["POST"])
 @require_api_key(key=API_KEY)
 def flask_event_catcher(source_system):
+    """
+    A relatively generic end-point for storing 'event' data into the database. 
+
+    Args:
+    source_system: From URL / Flask Route
+    {
+       "contributor": Email Address
+       "event_type": Free-Text Describing the event
+    }
+
+    Returns:
+    HTTP 201 + "OK"
+
+    """
 
     return event_catcher(source_system)
- 
+
+#  A route to deal with inbound web-hooks to trigger the execution and display of a query
+@flask_app.route("/scorecard/summary", methods=["POST"])
+@require_api_key(key=API_KEY)
+def flask_scorecard_summary():
+    """
+    Provides a summary of a teams achievements against the corporate scorecard.
+
+    Args:
+    filter_id: From URL / Flask Route 
+
+    Returns:
+    HTTP 201 + "OK"
+    """
+
+    return scorecard_tasks_by_user()
+
 # A simple health-check to validate that the service is at least running
 # and somewhat operational
 @flask_app.route("/health-check", methods=["GET"])
 def flask_health_check():
     """
     A trivial health-check to ensure the app is running.
-    Params: None 
+    
+    Args:
+    None
+
+    Returns:
+    HTTP 200 + "Health-Check-OK"
     """
 
-    return Response("Health-Check-OK", status=200, mimetype='text/plain') 
+    return Response("Health-Check-OK", status=200, mimetype='text/plain')
+
+# Start Flask
+if __name__ == '__main__':
+
+    # Run Flask
+    flask_app.run(debug=True)
