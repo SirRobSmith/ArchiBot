@@ -1,0 +1,3 @@
+[MASTER]
+ignore=.github,.venv,.vscode,documentation,reference,terraform,templates
+max-line-length=120

@@ -203,6 +203,7 @@ def scorecard_tasks_by_user():
                 "%SUMMARY%": issue['fields']['summary'],
                 "%LINKURL%": "https://atombank.atlassian.net/issues/"+issue['key'],
                 "%ISSUEKEY%": issue['key']
+
             }
 
             # Merge the data with the template

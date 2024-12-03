@@ -1,0 +1,20 @@
+[
+    {
+        "type": "section",
+        "text": {
+            "type": "plain_text",
+            "text": "%NAME%: %SUMMARY%",
+            "emoji": true
+        },
+        "accessory": {
+            "type": "button",
+            "text": {
+                "type": "plain_text",
+                "text": "%ISSUEKEY%"
+            },
+            "value": "click_me_123",
+            "url": "%LINKURL%",
+            "action_id": "button-action"
+        }
+    }
+]

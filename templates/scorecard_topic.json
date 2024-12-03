@@ -1,0 +1,12 @@
+[
+    {
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": "%SCORECARD_TOPIC%"
+        }
+    },
+    {
+        "type": "divider"
+    }
+]
