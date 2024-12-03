@@ -11,6 +11,8 @@ on:
 jobs:
     print-variable:
       runs-on: ubuntu-latest
+      environment: '${{ github.event.inputs.environment }}'
+    
       steps:
         - name: Print Var
-          run: echo ${{ github.event.inputs.environment }}
+          run: echo ${{ vars.GCP_PROJECT_NAME }}
