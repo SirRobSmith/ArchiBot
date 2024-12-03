@@ -4,19 +4,20 @@
 """
 
 import arrow
-from libs.template import load_template
 from flask import Response, request
 import app
+import sys
+from libs.template import load_template
 
 def publish_agenda():
     """
-        publish_agenda.py   Handles the publishing of the technical governance
-                            agenda. 
+    Publishes the TDA Agenda to the TDA Slack channel
 
-                            Does so by extracting data from JIRA based on an
-                            externally held filter, and posts the results to 
-                            Slack to allow members to see which items are 
-                            due to be discussed.
+    Args:
+    None
+
+    Returns:
+    HTTP 200 + "OK"
     """
 
     # Search for issues which fit the criteria
@@ -68,7 +69,7 @@ def publish_agenda():
             issue_author    = agenda_issue['fields']['creator']['displayName']
             issue_summary   = agenda_issue['fields']['summary']
             issue_key       = agenda_issue['key']
-            issue_link      = app.atlassian_api_root+"/browse/"+issue_key
+            issue_link      = app.ATLASSIAN_API_ROOT+"/browse/"+issue_key
 
 
             # Prepare the template data
@@ -93,8 +94,13 @@ def publish_agenda():
 
 def publish_adr():
     """ 
-    Broadcasts the state of an ADR, largely this will be triggered once
-    the governance process has started for a given ADR.
+    Broadcasts the state of an ADR to the channels of those teams impacted by it
+
+    Args:
+    None
+
+    Returns:
+    HTTP 200 + "OK"
     """
 
     # Get issue data from jira
@@ -114,13 +120,13 @@ def publish_adr():
         # Produce a string of impacted value-streams for the message
         for impacted_value_stream in issue_impacted_value_streams:
             impacted_value_stream_str = impacted_value_stream_str + impacted_value_stream['value']+","
-        
+
         # The last character will always be a , and needs to be trimmed to look less rubbish
         impacted_value_stream_str = impacted_value_stream_str[0:-1]
 
     else:
         # If we have no impacted value-streams
-        impacted_value_stream_str = ("No Impacted Value-Streams")
+        impacted_value_stream_str = "No Impacted Value-Streams"
 
 
     # Build the relevant information for each post we're go
@@ -139,6 +145,8 @@ def publish_adr():
                 vs_slack_id = app.SLACK_CHANNEL_MAP['Savings']
             if impacted_value_stream['value'] == "Business Banking":
                 vs_slack_id = app.SLACK_CHANNEL_MAP['Business Banking']
+            else:
+                vs_slack_id = app.SLACK_CHANNEL
 
             template_config = {
                 "%KEY%" : issue_key,
@@ -156,5 +164,83 @@ def publish_adr():
                 blocks=message_adr,
                 text="ADR Published"
             )
+
+    return Response("OK", status=200, mimetype='text/plain')
+
+def scorecard_tasks_by_user():
+    """
+    Displays tasks currently assigned to users, organised by Scorecard category
+
+    Args:
+    filter_id: The JIRA Filter ID which generates the results
+
+    Returns:
+    HTTP 200 + "OK"
+    """
+
+    # The scorecard map from app contains the structure we need to follow
+    for scorecard_topic in app.SCORECARD_MAP:
+        
+        # Execute a search of the filter
+        search_jql      = f'filter = {scorecard_topic['filter_id']}'
+        filter_data     = app.jira.jql(search_jql)
+
+        # Post a header for the Scorecard topic
+        template_config = {
+            "%SCORECARD_TOPIC%": scorecard_topic['name']
+
+        }
+        message = load_template("scorecard_topic", template_config)
+        app.app.client.chat_postMessage(channel=app.AA_SLACK_CHANNEL, blocks=message, text="Scorecard Progress Update")
+
+        # Each item represents a task the team member is working on.
+        for issue in filter_data['issues']:
+
+            # Create the item to post, based on the template
+            template_config = {
+                "%NAME%": issue['fields']['assignee']['displayName'],
+                "%STATUS%": issue['fields']['status']['name'],
+                "%SUMMARY%": issue['fields']['summary'],
+                "%LINKURL%": "https://atombank.atlassian.net/issues/"+issue['key'],
+                "%ISSUEKEY%": issue['key']
+            }
+
+            # Merge the data with the template
+            message = load_template("scorecard_item", template_config)
+
+            # Post to Slack
+            app.app.client.chat_postMessage(channel=app.AA_SLACK_CHANNEL, blocks=message, text="Scorecard Progress Update")
+
+
+    """
+    # Execute the filter and grab the results
+    search_jql      = f'filter = {filter_id}'
+    filter_data     = app.jira.jql(search_jql)
+
+    # Post the header
+    message = load_template("scorecard_header", {})
+    app.app.client.chat_postMessage(channel=app.SLACK_CHANNEL, blocks=message, text="Scorecard Progress Update")
+
+    # Each item represents a task the team member is working on.
+    for issue in filter_data['issues']:
+
+        # Create the item to post, based on the template
+        template_config = {
+            "%NAME%": issue['fields']['assignee']['displayName'],
+            "%STATUS%": issue['fields']['status']['name'],
+            "%SUMMARY%": issue['fields']['summary'],
+            "%LINKURL%": "https://atombank.atlassian.net/issues/"+issue['key'],
+            "%ISSUEKEY%": issue['key']
+
+        }
+
+        print(template_config, file=sys.stdout)
+
+        # Merge the data with the template
+        message = load_template("scorecard_item", template_config)
+
+        # Post to Slack
+        app.app.client.chat_postMessage(channel=app.SLACK_CHANNEL, blocks=message, text="Scorecard Progress Update")
+    """
 
     return Response("OK", status=200, mimetype='text/plain')
