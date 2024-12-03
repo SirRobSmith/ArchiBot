@@ -1,13 +1,18 @@
+"""
+    events.py - A simple collection of code to capture and
+                eventually analyse events which pertain to
+                the activities of John Architect. 
+"""
+
+
+import time
+import sys
+import sqlalchemy
+from flask import request, Response
 from jsonschema import validate
 from jsonschema.exceptions import ValidationError
-from flask import Flask, request, Response
-import time
-import sqlalchemy
 import app
-import sys
-
-
-def event_catcher(source_system):    
+def event_catcher(source_system):
     """
         flask_event_catcher     A highly generic end-point, designed to catch
                                 a range of requests from a number of sources.
@@ -26,7 +31,7 @@ def event_catcher(source_system):
         }
     }
 
-    # Figure out of the schema is valid, if it is - commit the data to our DB. 
+    # Figure out of the schema is valid, if it is - commit the data to our DB.
     try:
 
         # Validate the POST'd data against our message schema
@@ -38,8 +43,8 @@ def event_catcher(source_system):
         print(ve)
 
         # Let the calling client know something went wrong
-        return("Validation Errors")
-    
+        return "Validation Errors"
+
     else:
 
         # Generate the date in unix format
@@ -50,7 +55,7 @@ def event_catcher(source_system):
 
 
             try:
-                event = conn.execute(
+                conn.execute(
                     sqlalchemy.text(
                         f"INSERT INTO events (source_timestamp, source_system, contributor, event_type) VALUES ('{source_timestamp}', '{source_system}', '{request.json['contributor']}', '{request.json['event_type']}')"
                     )
