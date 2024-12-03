@@ -74,7 +74,7 @@ jobs:
           echo "- View the files in the current directory"
           ls -halt
           echo "- Initiaitlise terraform"
-          terraform init -backend-config="bucket=${{ vars.STATE_BUCKET }}" -backend-config="key=${{ vars.APP_NAME }}/terraform/state" -backend-config="${{ vars.GCP_REGION }}"
+          terraform init -backend-config="bucket=${{ vars.STATE_BUCKET }}" -backend-config="key=${{ vars.APP_NAME }}/terraform/state/default.tfstate" -backend-config="region=${{ vars.GCP_REGION }}"
           echo "- Run terraform plan"
           terraform plan
           terraform apply -auto-approve
