@@ -1,22 +1,16 @@
 name: 'Test Environment Variable Stuff'
 
 on: 
-
   workflow_dispatch:
-    - main
-
+    inputs:
+      environment:
+        description: 'The environment to deploy to'
+        required: true
+        default: 'dev'
 
 jobs:
     print-variable:
       runs-on: ubuntu-latest
-
-      strategy:
-        matrix:
-          environment: [production]
-
-      environment: ${{ matrix.environment }}
-
       steps:
         - name: Print Var
-          run: echo ${{ matrix.environment }}
-
+          run: echo ${{ github.event.inputs.environment }}
