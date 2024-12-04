@@ -16,3 +16,8 @@ jobs:
       steps:
         - name: Print Var
           run: echo ${{ vars.GCP_PROJECT_NAME }}
+
+        - name: RegEx Testing
+          run: |
+            hostname=$(echo ${{ vars.ARTEFACT_REGISTRY_ROOT }} | grep -o '^[^/]\+'
+            echo hostname
