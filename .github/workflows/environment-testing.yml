@@ -19,5 +19,5 @@ jobs:
 
         - name: RegEx Testing
           run: |
-            hostname=$(echo "${{ vars.ARTEFACT_REGISTRY_ROOT }}" | grep -o '^([^\/]+)'
+            hostname=$(echo "${{ vars.ARTEFACT_REGISTRY_ROOT }}" | grep -o '^([^\/]+)')
             echo hostname
