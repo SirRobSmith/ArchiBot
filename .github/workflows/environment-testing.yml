@@ -22,4 +22,4 @@ jobs:
             echo ${{ vars.ARTEFACT_REGISTRY_ROOT }}
             artifact_registry='wibble.com/this/that'
             echo $artifact_registry
-            echo $artifact_registry | grep -o '^([^\/]+)'
+            echo $artifact_registry | grep -o ^([^\/]+)
