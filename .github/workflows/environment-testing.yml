@@ -19,7 +19,7 @@ jobs:
 
         - name: RegEx Testing
           run: |
-            artifact_registry = "${{ vars.ARTEFACT_REGISTRY_ROOT }}"
+            artifact_registry = '${{ vars.ARTEFACT_REGISTRY_ROOT }}'
             echo $artifact_registry
             artifact_registry_hostname=$(echo $artifact_registry | grep -o '^([^\/]+)')
             echo $artifact_registry_hostname
