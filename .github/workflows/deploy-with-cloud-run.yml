@@ -77,7 +77,6 @@ jobs:
           terraform init -backend-config="bucket=${{ vars.STATE_BUCKET }}" -backend-config="prefix=${{ vars.APP_NAME }}/terraform/state"
           echo "- Run terraform plan"
           terraform plan
-          terraform apply -auto-approve
         env:
           TF_VAR_project_name: ${{ vars.GCP_PROJECT_NAME }}
           TF_VAR_region: ${{ vars.GCP_REGION }}
